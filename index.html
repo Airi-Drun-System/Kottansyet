@@ -26,17 +26,6 @@
     display:flex;align-items:center;justify-content:center;
     perspective:900px;
   }
-  #motionTrail{
-    position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:1;
-  }
-  .motionGhost{
-    position:absolute;left:50%;top:50%;width:100%;height:100%;
-    object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none;
-    transform-origin:center;
-    opacity:0;
-    filter:blur(4px) saturate(.95);
-    will-change:transform,opacity;
-  }
   #hero{
     width:100%;height:100%;object-fit:contain;display:block;
     user-select:none;-webkit-user-drag:none;
@@ -115,7 +104,7 @@
   <div class="glow"></div>
   <div id="hint">Новый трек · кот танцует только когда SoundCloud реально играет</div>
 
-  <div id="heroWrap"><div id="motionTrail"></div><img id="hero" src="hero.png" alt="hero"></div>
+  <div id="heroWrap"><img id="hero" src="hero.png" alt="hero"></div>
   <div id="flipText">FLIP IT!</div>
   <div id="bars"></div>
 
@@ -146,7 +135,6 @@
   const FLIP_WINDOW = 1.25;
 
   const hero = document.getElementById('hero');
-  const trail = document.getElementById('motionTrail');
   const flipText = document.getElementById('flipText');
   const bars = document.getElementById('bars');
   const playBtn = document.getElementById('playBtn');
@@ -168,8 +156,6 @@
   let animationActive = false;
   let hasFlipped = false;
   let lastTime = 0;
-  let lastGhostAt = 0;
-  let ghostToggle = 0;
 
   function fmt(ms){
     const s = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
@@ -295,34 +281,12 @@
     hero.style.filter = `drop-shadow(0 22px 30px rgba(0,0,0,.38)) blur(${blur}px)`;
   }
 
-  function spawnMotionGhost(p){
-    if(!animationActive || p.energy < 0.18) return;
-    const now = performance.now();
-    if(now - lastGhostAt < 58) return;
-    lastGhostAt = now;
-
-    const ghost = hero.cloneNode(true);
-    ghost.removeAttribute('id');
-    ghost.className = 'motionGhost';
-    ghost.style.transform = hero.style.transform;
-    ghost.style.filter = `blur(${2.8 + p.energy * 2.2}px) saturate(.9)`;
-    ghost.style.opacity = String(0.13 + Math.min(.09, p.energy * .06));
-    ghost.style.zIndex = '1';
-    ghostToggle++;
-    trail.appendChild(ghost);
-
-    ghost.animate([
-      {opacity: ghost.style.opacity, transform: hero.style.transform},
-      {opacity: 0, transform: hero.style.transform}
-    ], {duration: 260 + p.energy * 140, easing:'ease-out'}).onfinish = () => ghost.remove();
-  }
 
   function updateVisuals(t){
     const sec = t / 1000;
     const beat = sec * BPM / 60;
     const p = getDancePose(sec);
     applyPose(p);
-    spawnMotionGhost(p);
 
     // Equalizer остаётся синхронным с темпом.
     barEls.forEach((bar,i) => {
@@ -350,7 +314,6 @@
     hero.style.transform = 'translateX(0) translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1)';
     hero.style.filter = 'drop-shadow(0 22px 30px rgba(0,0,0,.38))';
     barEls.forEach(bar => bar.style.height = '10px');
-    [...trail.children].forEach(el => el.remove());
   }
 
   function syncFromWidget(){
