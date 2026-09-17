@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Кот танцует — SoundCloud</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden}
+  body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:radial-gradient(circle at 50% 45%,#24134a 0%,#120d26 38%,#080812 78%);
+    color:#fff;
+  }
+  #scene{position:relative;width:100%;height:100%;overflow:hidden}
+  .glow{
+    position:absolute;left:50%;top:46%;width:min(58vw,620px);height:min(58vw,620px);
+    transform:translate(-50%,-50%);border-radius:50%;
+    background:radial-gradient(circle,rgba(169,84,255,.30),rgba(103,44,190,.10) 45%,transparent 72%);
+    filter:blur(18px);pointer-events:none;
+  }
+  #heroWrap{
+    position:absolute;left:50%;top:44%;
+    width:min(42vw,430px);height:min(42vw,430px);
+    transform:translate(-50%,-50%);
+    display:flex;align-items:center;justify-content:center;
+    perspective:900px;
+  }
+  #motionTrail{
+    position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:1;
+  }
+  .motionGhost{
+    position:absolute;left:50%;top:50%;width:100%;height:100%;
+    object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none;
+    transform-origin:center;
+    opacity:0;
+    filter:blur(4px) saturate(.95);
+    will-change:transform,opacity;
+  }
+  #hero{
+    width:100%;height:100%;object-fit:contain;display:block;
+    user-select:none;-webkit-user-drag:none;
+    transform-origin:center;
+    position:relative;z-index:2;
+    filter:drop-shadow(0 22px 30px rgba(0,0,0,.38));
+    will-change:transform;
+  }
+  #flipText{
+    position:absolute;left:50%;top:16%;transform:translateX(-50%) scale(.6);
+    font-weight:900;font-size:clamp(34px,7vw,88px);letter-spacing:.08em;
+    opacity:0;pointer-events:none;text-shadow:0 8px 35px rgba(0,0,0,.6);
+    will-change:transform,opacity;
+  }
+  .flash{animation:flash .9s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes flash{
+    0%{opacity:0;transform:translateX(-50%) scale(.5) rotate(-8deg)}
+    18%{opacity:1;transform:translateX(-50%) scale(1.08) rotate(5deg)}
+    48%{opacity:1;transform:translateX(-50%) scale(1) rotate(0)}
+    100%{opacity:0;transform:translateX(-50%) scale(1.35) rotate(0)}
+  }
+  #bars{
+    position:absolute;left:50%;bottom:86px;transform:translateX(-50%);
+    width:min(86vw,860px);height:120px;display:flex;align-items:flex-end;
+    gap:5px;opacity:.9;
+  }
+  .bar{flex:1;max-width:14px;min-width:4px;height:12px;border-radius:999px;
+    background:linear-gradient(to top,#8f4cff,#e4ccff);box-shadow:0 0 12px rgba(152,76,255,.45)}
+  #controls{
+    position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:12px;z-index:20;
+    background:rgba(13,10,28,.62);backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:10px 12px;
+  }
+  button{
+    border:0;background:#fff;color:#16131d;font-weight:800;border-radius:12px;
+    padding:11px 17px;cursor:pointer;font-size:15px;
+  }
+  button:active{transform:translateY(1px)}
+  #time{font-variant-numeric:tabular-nums;font-size:13px;min-width:100px;opacity:.78;text-align:center}
+  #playerBox{
+    position:absolute;right:12px;bottom:12px;width:232px;height:88px;z-index:10;
+    border-radius:11px;overflow:hidden;border:1px solid rgba(255,255,255,.06);
+    box-shadow:0 10px 24px rgba(0,0,0,.62);background:#050505;
+    opacity:.62;
+    filter:brightness(.48) saturate(.58) contrast(.9);
+  }
+  #player{width:100%;height:88px;border:0}
+  #hint{
+    position:absolute;left:50%;top:20px;transform:translateX(-50%);z-index:5;
+    padding:9px 13px;border-radius:999px;background:rgba(0,0,0,.24);
+    border:1px solid rgba(255,255,255,.08);font-size:12px;opacity:.72;
+    text-align:center;white-space:nowrap;
+  }
+  #sourceLink{
+    position:absolute;left:18px;bottom:18px;z-index:10;
+    color:rgba(255,255,255,.68);font-size:11px;text-decoration:none;
+  }
+  #sourceLink:hover{color:#fff}
+  @media(max-width:800px){
+    #playerBox{width:220px;max-width:58vw;height:82px;right:10px;bottom:78px}
+    #heroWrap{width:min(62vw,430px);height:min(62vw,430px)}
+    #bars{bottom:124px;height:90px}
+    #controls{bottom:18px}
+    #sourceLink{bottom:10px;left:10px}
+  }
+  @media(max-width:520px){
+    #playerBox{width:210px;max-width:80vw;height:78px;bottom:76px}
+    #hint{font-size:10px;max-width:90vw;white-space:normal}
+    #sourceLink{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="scene">
+  <div class="glow"></div>
+  <div id="hint">Новый трек · кот танцует только когда SoundCloud реально играет</div>
+
+  <div id="heroWrap"><div id="motionTrail"></div><img id="hero" src="hero.png" alt="hero"></div>
+  <div id="flipText">FLIP IT!</div>
+  <div id="bars"></div>
+
+  <div id="playerBox">
+    <iframe
+      id="player"
+      scrolling="no"
+      frameborder="no"
+      allow="autoplay"
+      src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Ftrolishnik-griferov%2Fxuj-poglubzhe&color=%237f4cff&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false">
+    </iframe>
+  </div>
+
+  <a id="sourceLink" href="https://soundcloud.com/trolishnik-griferov/xuj-poglubzhe" target="_blank" rel="noopener">Открыть трек в SoundCloud ↗</a>
+
+  <div id="controls">
+    <button id="playBtn">▶ Play</button>
+    <div id="time">0:00 / --:--</div>
+  </div>
+</div>
+
+<script src="https://w.soundcloud.com/player/api.js"></script>
+<script>
+(() => {
+  const BPM = 126;
+  // Flip пока выключен: для этой песни мы не ставим его наугад.
+  const FLIP_TIME = null;
+  const FLIP_WINDOW = 1.25;
+
+  const hero = document.getElementById('hero');
+  const trail = document.getElementById('motionTrail');
+  const flipText = document.getElementById('flipText');
+  const bars = document.getElementById('bars');
+  const playBtn = document.getElementById('playBtn');
+  const timeEl = document.getElementById('time');
+  const iframe = document.getElementById('player');
+
+  const BAR_COUNT = 64;
+  for(let i = 0; i < BAR_COUNT; i++){
+    const b = document.createElement('div');
+    b.className = 'bar';
+    bars.appendChild(b);
+  }
+  const barEls = [...bars.children];
+
+  let widget = null;
+  let currentTime = 0;
+  let duration = 221000;
+  let isActuallyPlaying = false;
+  let animationActive = false;
+  let hasFlipped = false;
+  let lastTime = 0;
+  let lastGhostAt = 0;
+  let ghostToggle = 0;
+
+  function fmt(ms){
+    const s = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+    const m = Math.floor(s / 60);
+    return `${m}:${String(s % 60).padStart(2,'0')}`;
+  }
+
+  function doFlip(){
+    hero.animate([
+      {transform:'translateX(0) translateY(0) scale(1) rotateX(0deg) rotateY(0deg) rotateZ(0deg)'},
+      {transform:'translateX(-28px) translateY(-46px) scale(1.11) rotateX(8deg) rotateY(180deg) rotateZ(-10deg)'},
+      {transform:'translateX(28px) translateY(-30px) scale(1.08) rotateX(-5deg) rotateY(365deg) rotateZ(10deg)'},
+      {transform:'translateX(0) translateY(0) scale(1) rotateX(0deg) rotateY(360deg) rotateZ(0deg)'}
+    ], {duration:900, easing:'cubic-bezier(.15,.85,.2,1)'});
+
+    flipText.classList.remove('flash');
+    void flipText.offsetWidth;
+    flipText.classList.add('flash');
+  }
+
+  function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+
+  // Сильнее ощущается именно как ходьба/танец: большие шаги по сцене,
+  // разные паттерны хореографии и смена направления каждые несколько тактов.
+  function getDancePose(sec){
+    const beat = sec * BPM / 60;
+    const cycle = Math.floor(beat / 8) % 8;
+    const local = (beat % 8) / 8;
+    const xMax = Math.min(250, Math.max(150, window.innerWidth * 0.18));
+
+    const beat01 = beat % 1;
+    const kick = Math.pow(Math.max(0, 1 - beat01 * 4.4), 2.4);
+    const pulse = Math.pow(Math.abs(Math.sin(Math.PI * beat)), 9);
+    const bob2 = Math.sin(Math.PI * 2 * beat / 2 + .6);
+    const sway = Math.sin(Math.PI * 2 * beat / 4 - .2);
+    const fast = Math.sin(Math.PI * 2 * beat * 1.5 + 1.2);
+    const micro = Math.sin(Math.PI * 2 * beat * 3 + .7);
+
+    let x = 0, y = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1;
+
+    if(cycle === 0){
+      // Левый/правый степ — кот реально переходит по сцене.
+      x = Math.sin(Math.PI * 2 * local) * xMax;
+      y = -8 - pulse * 22;
+      ry = Math.sin(Math.PI * 2 * local + Math.PI/2) * 20;
+      rz = Math.sin(Math.PI * 4 * local) * 8;
+    } else if(cycle === 1){
+      // Два шага в одну сторону -> разворот -> обратно.
+      const walk = Math.sin(Math.PI * 2 * local);
+      x = walk * xMax * .82;
+      y = -6 - pulse * 18;
+      ry = -walk * 28;
+      rz = Math.sin(Math.PI * 4 * local) * 10;
+    } else if(cycle === 2){
+      // Зигзаг с диагональю.
+      x = Math.sin(Math.PI * 4 * local) * xMax * .72;
+      y = -18 - Math.abs(Math.sin(Math.PI * 2 * local)) * 24;
+      ry = Math.sin(Math.PI * 4 * local) * 34;
+      rx = Math.sin(Math.PI * 2 * local) * 8;
+      rz = Math.cos(Math.PI * 4 * local) * 10;
+    } else if(cycle === 3){
+      // Резкий хип-хоп: меньше прохода, больше корпуса.
+      x = Math.sin(Math.PI * 4 * local) * xMax * .46;
+      y = -10 - pulse * 30;
+      ry = Math.sin(Math.PI * 2 * local) * 42;
+      rz = Math.sin(Math.PI * 4 * local + .4) * 12;
+      rx = Math.sin(Math.PI * 2 * local + .7) * 9;
+    } else if(cycle === 4){
+      // Длинный проход слева направо.
+      x = (local * 2 - 1) * xMax;
+      y = -7 - kick * 20;
+      ry = x > 0 ? 24 : -24;
+      rz = Math.sin(Math.PI * 2 * local) * 9;
+    } else if(cycle === 5){
+      // Возврат назад с "moonwalk"-эффектом.
+      x = (1 - local * 2) * xMax * .95;
+      y = -8 - pulse * 16;
+      ry = x < 0 ? -32 : 32;
+      rz = Math.sin(Math.PI * 2 * local) * 8;
+    } else if(cycle === 6){
+      // Кружение + большой наклон.
+      x = Math.cos(Math.PI * 2 * local) * xMax * .55;
+      y = -12 - Math.sin(Math.PI * 2 * local) * 28 - pulse * 10;
+      ry = Math.sin(Math.PI * 2 * local) * 55;
+      rz = Math.cos(Math.PI * 2 * local) * 16;
+      rx = Math.sin(Math.PI * 4 * local) * 10;
+    } else {
+      // Финальный хаос.
+      x = Math.sin(Math.PI * 6 * local) * xMax * .58;
+      y = -12 - Math.abs(Math.sin(Math.PI * 4 * local)) * 30;
+      ry = Math.sin(Math.PI * 6 * local) * 48;
+      rz = Math.cos(Math.PI * 4 * local) * 14;
+      rx = Math.sin(Math.PI * 4 * local + .5) * 13;
+    }
+
+    // Общее покачивание — чтобы даже во время переходов персонаж не "замирал".
+    x += sway * 6 + fast * 3;
+    y += -4 - bob2 * 4;
+    rz += fast * 4 + micro * 1.8;
+
+    // Ограничиваем движение, чтобы кот не ушёл за экран.
+    x = clamp(x, -xMax, xMax);
+
+    const squash = kick * 0.045 + pulse * 0.018;
+    sx = 1 - squash;
+    sy = 1 + squash;
+
+    return {x,y,rx,ry,rz,sx,sy,energy: clamp(Math.abs(x)/xMax * .65 + pulse + Math.abs(fast)*.15, 0, 1.8)};
+  }
+
+  function applyPose(p){
+    hero.style.transform = [
+      `translateX(${p.x}px)`,
+      `translateY(${p.y}px)`,
+      `rotateX(${p.rx}deg)`,
+      `rotateY(${p.ry}deg)`,
+      `rotateZ(${p.rz}deg)`,
+      `scale(${p.sx},${p.sy})`
+    ].join(' ');
+
+    // Реальный "speed blur": чем резче движение, тем сильнее мягкое размытие.
+    const blur = Math.min(2.2, p.energy * 1.5);
+    hero.style.filter = `drop-shadow(0 22px 30px rgba(0,0,0,.38)) blur(${blur}px)`;
+  }
+
+  function spawnMotionGhost(p){
+    if(!animationActive || p.energy < 0.18) return;
+    const now = performance.now();
+    if(now - lastGhostAt < 58) return;
+    lastGhostAt = now;
+
+    const ghost = hero.cloneNode(true);
+    ghost.removeAttribute('id');
+    ghost.className = 'motionGhost';
+    ghost.style.transform = hero.style.transform;
+    ghost.style.filter = `blur(${2.8 + p.energy * 2.2}px) saturate(.9)`;
+    ghost.style.opacity = String(0.13 + Math.min(.09, p.energy * .06));
+    ghost.style.zIndex = '1';
+    ghostToggle++;
+    trail.appendChild(ghost);
+
+    ghost.animate([
+      {opacity: ghost.style.opacity, transform: hero.style.transform},
+      {opacity: 0, transform: hero.style.transform}
+    ], {duration: 260 + p.energy * 140, easing:'ease-out'}).onfinish = () => ghost.remove();
+  }
+
+  function updateVisuals(t){
+    const sec = t / 1000;
+    const beat = sec * BPM / 60;
+    const p = getDancePose(sec);
+    applyPose(p);
+    spawnMotionGhost(p);
+
+    // Equalizer остаётся синхронным с темпом.
+    barEls.forEach((bar,i) => {
+      const a = Math.sin(beat * Math.PI * 2 + i * 0.52) * .5 + .5;
+      const b = Math.sin(beat * Math.PI + i * 0.17 + (i / BAR_COUNT) * 4) * .5 + .5;
+      const c = Math.sin(beat * Math.PI * 1.5 + i * 0.09) * .5 + .5;
+      const h = 9 + (a*.40 + b*.35 + c*.25) * (34 + (0.35 + p.energy*.9) * 72);
+      bar.style.height = `${h}px`;
+    });
+  }
+
+  function checkFlip(t){
+    if(FLIP_TIME == null) return;
+    const target = FLIP_TIME * 1000;
+    if(!hasFlipped && t >= target && lastTime < target + FLIP_WINDOW * 1000){
+      doFlip();
+      hasFlipped = true;
+    }
+    if(t < target - 1500) hasFlipped = false;
+    lastTime = t;
+  }
+
+  function resetVisuals(){
+    animationActive = false;
+    hero.style.transform = 'translateX(0) translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1)';
+    hero.style.filter = 'drop-shadow(0 22px 30px rgba(0,0,0,.38))';
+    barEls.forEach(bar => bar.style.height = '10px');
+    [...trail.children].forEach(el => el.remove());
+  }
+
+  function syncFromWidget(){
+    if(!widget) return;
+
+    widget.getPosition(ms => {
+      if(typeof ms !== 'number') return;
+      currentTime = ms;
+      timeEl.textContent = `${fmt(currentTime)} / ${fmt(duration)}`;
+
+      widget.isPaused(paused => {
+        const playing = paused === false;
+        isActuallyPlaying = playing;
+        animationActive = playing;
+        playBtn.textContent = playing ? '❚❚ Pause' : '▶ Play';
+        if(!playing) resetVisuals();
+      });
+    });
+  }
+
+  function pollPosition(){
+    syncFromWidget();
+    setTimeout(pollPosition, 120);
+  }
+
+  function init(){
+    widget = SC.Widget(iframe);
+
+    widget.bind(SC.Widget.Events.READY, () => {
+      widget.getDuration(ms => {
+        if(ms) duration = ms;
+        timeEl.textContent = `${fmt(currentTime)} / ${fmt(duration)}`;
+      });
+      pollPosition();
+    });
+
+    widget.bind(SC.Widget.Events.PLAY, () => {
+      isActuallyPlaying = true;
+      animationActive = true;
+      playBtn.textContent = '❚❚ Pause';
+    });
+
+    widget.bind(SC.Widget.Events.PAUSE, () => {
+      isActuallyPlaying = false;
+      animationActive = false;
+      playBtn.textContent = '▶ Play';
+      resetVisuals();
+    });
+
+    widget.bind(SC.Widget.Events.FINISH, () => {
+      isActuallyPlaying = false;
+      animationActive = false;
+      currentTime = 0;
+      lastTime = 0;
+      hasFlipped = false;
+      playBtn.textContent = '▶ Play';
+      timeEl.textContent = `0:00 / ${fmt(duration)}`;
+      resetVisuals();
+    });
+
+    widget.bind(SC.Widget.Events.SEEK, e => {
+      const pos = e && typeof e.currentPosition === 'number' ? e.currentPosition : currentTime;
+      currentTime = pos;
+      if(FLIP_TIME != null && currentTime < (FLIP_TIME - 1.5) * 1000) hasFlipped = false;
+    });
+
+    widget.bind(SC.Widget.Events.PLAY_PROGRESS, e => {
+      if(e && typeof e.currentPosition === 'number') currentTime = e.currentPosition;
+      timeEl.textContent = `${fmt(currentTime)} / ${fmt(duration)}`;
+      if(isActuallyPlaying) updateVisuals(currentTime);
+      checkFlip(currentTime);
+    });
+
+    playBtn.addEventListener('click', () => {
+      if(widget) widget.toggle();
+    });
+  }
+
+  const wait = setInterval(() => {
+    if(window.SC && SC.Widget){
+      clearInterval(wait);
+      init();
+    }
+  }, 100);
+
+  requestAnimationFrame(function loop(){
+    requestAnimationFrame(loop);
+    if(animationActive) updateVisuals(currentTime);
+  });
+})();
+</script>
+</body>
+</html>
